@@ -1,0 +1,41 @@
+{
+    "model" : [
+        
+        {
+            "conv_layers" : [
+            
+                {
+                    "type": "CNN",
+                    "kernel_height": 5,
+                    "kernel_width" : 5,
+                    "stride": 1,
+                    "output_channels": 20
+                },
+
+                {
+                    "type": "CNN",
+                    "kernel_height": 3,
+                    "kernel_width" : 3,
+                    "stride": 1,
+                    "output_channels": 32
+                },
+
+                {
+                    "type": "CNN",
+                    "kernel_height": 1,
+                    "kernel_width" : 1,
+                    "stride": 1,
+                    "output_channels": 48
+                }
+
+            ]
+
+        },
+
+        {
+
+        }
+
+    ]
+
+}

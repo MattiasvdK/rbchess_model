@@ -1,6 +1,27 @@
 import numpy as np
 from torch.utils.data import DataLoader, Dataset
 import torch
+import os
+
+def get_chess_loader(*, path: str, batch_size: int):
+    """Creates the data generator.
+    
+    Args:
+        path: the directory where the data is stored.
+        batch_size: the batch sizes to load the data in.
+
+    Returns:
+        DataLoader: the generator that loads the data.
+
+    """
+    samples = [path + '/' + sample for sample in os.listdir(path)]
+    
+    return DataLoader(
+        dataset=ChessDataset(samples),
+        batch_size=batch_size,
+        shuffle=True,
+        drop_last=False
+    )
 
 
 class ChessDataset(Dataset):
@@ -35,7 +56,7 @@ class ChessDataset(Dataset):
         """Define the length of the class."""
         return len(self.samples) 
 
-    def __getitem__(self, idx: int) -> torch.tensor, torch.tensor:
+    def __getitem__(self, idx: int): 
         """Loads and formats the data stored in the samples.
         
         The function loads and formats the training data and labels.
@@ -55,24 +76,42 @@ class ChessDataset(Dataset):
         
         sample = self.samples[idx]
         
-        x = torch.zeros(8, 8, 12)
+        # Channels, height, width
+        x = torch.zeros(12, 8, 8)
         
-        board = list(map(int, open(sample + '/board', 'rb').read()))
+        # x is lowered by one to map the pieces to the depth of the tensor.
+        # opposing colour is stored as negative numbers. To map those to the
+        # to the correct position, 244 is subtracted. Putting the king at
+        # depth 6 and the pawns at depth 12.
+
+        board = list(
+            map(
+                lambda x: x - 1 if x < 126 else x - 244,
+                map(int, open(sample + '/board', 'rb').read())
+            )
+        )
          
-        # TODO: Read data and process into tensor
+        for idx, piece in enumerate(board):
+            if piece != -1:
+                x[piece][idx // 8][idx % 8] = 1
 
-        y = torch.tensor(map(int, open(sample + '/move', 'rb').read()))
-
+        data = torch.tensor(list(map(int, open(sample + '/move', 'rb').read())))
+        #y = torch.zeros(4, 8)
+        y = torch.zeros(32)
         
+        for idx, val in enumerate(data):
+            y[idx * 8 + val] = 1
+
         return x, y
 
-    def __process(board: list, tensor: torch.tensor)
+    #def __process(board: list, tensor: torch.tensor)
         """Maps a list of integers to a tensor.
 
         This function is a helper for __getitem__ to process the list of
         integers that is stored as data and map it to the tensor needed
         for the network to process.
         """
-        # TODO: Implement
-        pass
+        
+        #for idx, piece in enumerate(board):
+        #    x[idx // 8][idx % 8][piece] = 1
 
