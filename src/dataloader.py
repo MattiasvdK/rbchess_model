@@ -1,9 +1,9 @@
 import numpy as np
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, random_split
 import torch
 import os
 
-def get_chess_loader(*, path: str, batch_size: int):
+def get_chess_loader(*, path: str, batch_size: int, split = [0.7, 0.3]):
     """Creates the data generator.
     
     Args:
@@ -15,13 +15,32 @@ def get_chess_loader(*, path: str, batch_size: int):
 
     """
     samples = [path + '/' + sample for sample in os.listdir(path)]
-    
-    return DataLoader(
-        dataset=ChessDataset(samples),
+
+    train_len = int(split[0] * len(samples))
+    test_len = len(samples) - train_len
+
+    # Inserting fraction list here does not seem to work
+    train, test = random_split(
+        ChessDataset(samples),
+        [train_len, test_len],
+        generator=torch.Generator()
+    )
+
+    train_loader = DataLoader(
+        dataset=train,
         batch_size=batch_size,
         shuffle=True,
         drop_last=False
     )
+    
+    test_loader = DataLoader(
+        dataset=test,
+        batch_size=1,       # Or should this keep the same batch_size?
+        shuffle=True,
+        drop_last=False
+    )
+
+    return train_loader, test_loader
 
 
 class ChessDataset(Dataset):

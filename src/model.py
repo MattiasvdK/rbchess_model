@@ -10,7 +10,18 @@ class CNNBlock(nn.Module):
 
     def forward(self, x):
         return self.leakyrelu(self.conv(x))
+
+
+class Softmax(nn.Module):
     
+    def __init__(self):
+        super(Softmax, self).__init__()
+        self.sm = nn.Softmax(dim=1)
+
+    # TODO make this work
+    # ?? Implement softmax myself to reach subarrays of 8
+    def forward(self, x):
+        return x
 
 # TODO Make a more adaptable version to be able to change the model shape
 #      on the fly
@@ -41,9 +52,11 @@ class TheModel(nn.Module):
 
     def _create_fc_layers(self):
         return nn.Sequential(
-            nn.Flatten(),           # 2 * Channels = 2 * 64 = 128 .... output seems to be 256
+            nn.Flatten(),           # 2 * 2 * Channels = 2 * 2 * 64 = 256
             nn.Linear(256, 256),    # TODO calculate CNN output dimensions
             nn.LeakyReLU(0.1),  
-            nn.Linear(256, 32),  # TODO see how to get 4 heads of 8 classes
+            nn.Linear(256, 4 * 8),  # TODO see how to get 4 heads of 8 classes
+            #Softmax(),          # 4-dimensional softmax
         )
+
 
