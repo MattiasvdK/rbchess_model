@@ -21,7 +21,7 @@ def train_model(loss_fn, metric_fn):
     )
 
     train_loader, test_loader = get_chess_loader(
-        path='../../test',
+        path='../../test2',
         batch_size=BATCH_SIZE
     )
 
@@ -39,6 +39,7 @@ def train_model(loss_fn, metric_fn):
 
         preds = []
 
+        # The training loop
         for x, y, in train_loader:
 
             x, y = x.to(DEVICE), y.to(DEVICE)
@@ -55,6 +56,8 @@ def train_model(loss_fn, metric_fn):
 
             preds = predictions
 
+
+        # The test loop
         for x, y, in test_loader:
 
             x, y = x.to(DEVICE), y.to(DEVICE)

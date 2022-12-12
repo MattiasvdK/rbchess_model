@@ -56,7 +56,7 @@ class TheModel(nn.Module):
             nn.Linear(256, 256),    # TODO calculate CNN output dimensions
             nn.LeakyReLU(0.1),  
             nn.Linear(256, 4 * 8),  # TODO see how to get 4 heads of 8 classes
-            #Softmax(),          # 4-dimensional softmax
+            #Softmax(),             # 4-dimensional softmax
         )
 
 

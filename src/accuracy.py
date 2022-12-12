@@ -2,7 +2,7 @@ from torchmetrics import Metric
 import torch
 
 class CorrectDimension(Metric):
-    '''Calculates hitrate
+    '''Calculates hitrate of correct dimension (row or col).
     
     '''
     
@@ -28,7 +28,7 @@ class CorrectDimension(Metric):
 
 
 class CorrectSquare(Metric):
-    '''Calculates hitrate
+    '''Calculates hitrate of correct square.
     
     '''
     
@@ -52,8 +52,10 @@ class CorrectSquare(Metric):
     def compute(self):
         return self.correct.float() / self.total
 
+
+
 class CorrectMove(Metric):
-    '''Calculates hitrate
+    '''Calculates hitrate of complete move.
     
     '''
     
