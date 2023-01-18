@@ -6,6 +6,8 @@ class CorrectDimension(Metric):
     
     '''
     
+    full_state_update: bool = True
+
     def __init__(self):
         super().__init__()
         self.add_state("correct", default=torch.tensor(0))
@@ -31,6 +33,8 @@ class CorrectSquare(Metric):
     '''Calculates hitrate of correct square.
     
     '''
+
+    full_state_update: bool = True
     
     def __init__(self):
         super().__init__()
@@ -58,6 +62,8 @@ class CorrectMove(Metric):
     '''Calculates hitrate of complete move.
     
     '''
+
+    full_state_update: bool = True
     
     def __init__(self):
         super().__init__()

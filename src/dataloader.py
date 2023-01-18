@@ -112,14 +112,20 @@ class ChessDataset(Dataset):
          
         for idx, piece in enumerate(board):
             if piece != -1:
-                x[piece][idx // 8][idx % 8] = 1
+                try:
+                    x[piece][idx // 8][idx % 8] = 1
+                except IndexError as err:
+                    print(f'--- ERROR: {err}, at index: {idx} ---')
 
         data = torch.tensor(list(map(int, open(sample + '/move', 'rb').read())))
         #y = torch.zeros(4, 8)
         y = torch.zeros(32)
         
         for idx, val in enumerate(data):
-            y[idx * 8 + val] = 1
+            try:
+                y[idx * 8 + val] = 1
+            except IndexError as err:
+                print(f'--- ERROR: {err}, at index: {idx} ---')
 
         return x, y
 

@@ -18,9 +18,16 @@ class Softmax(nn.Module):
         super(Softmax, self).__init__()
         self.sm = nn.Softmax(dim=1)
 
-    # TODO make this work
+    # TODO make this work, this seems to break training a little bit
     # ?? Implement softmax myself to reach subarrays of 8
     def forward(self, x):
+        vec = torch.empty_like(x)
+        
+        for idx in range(0, len(x), 8):
+            vec[idx:idx+8] = self.sm(x[idx:idx+8])
+
+        x = vec
+
         return x
 
 # TODO Make a more adaptable version to be able to change the model shape
