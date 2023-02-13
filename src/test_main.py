@@ -5,7 +5,7 @@ import train
 from accuracy import *
 
 def run():
-    train.train_model(CrossEntropyLoss(), CorrectMove())
+    train.train_model(CrossEntropyLoss())
 
 if __name__ == '__main__':
     run()

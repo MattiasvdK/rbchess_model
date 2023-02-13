@@ -40,11 +40,24 @@ class TheModel(nn.Module):
         
         self.darknet = self._create_conv_layers()
         self.fcl = self._create_fc_layers()
+        
+        self.task_one = self._create_task_layer()
+        self.task_two = self._create_task_layer()
+        self.task_three = self._create_task_layer()
+        self.task_four = self._create_task_layer()
+
 
     def forward(self, x):
         x = self.darknet(x)
-        return self.fcl(x)
-        #return self.fcl(torch.flatten(x, start_dim=1))
+        x = self.fcl(x)
+        
+        return torch.stack(
+            (self.task_one(x),   
+            self.task_two(x),   
+            self.task_three(x), 
+            self.task_four(x)),
+            dim=1
+        )
 
 
     def _create_conv_layers(self):  # TODO how to define the channels
@@ -62,8 +75,13 @@ class TheModel(nn.Module):
             nn.Flatten(),           # 2 * 2 * Channels = 2 * 2 * 64 = 256
             nn.Linear(256, 256),    # TODO calculate CNN output dimensions
             nn.LeakyReLU(0.1),  
-            nn.Linear(256, 4 * 8),  # TODO see how to get 4 heads of 8 classes
-            #Softmax(),             # 4-dimensional softmax
+            #nn.Linear(256, 4 * 8),  # TODO see how to get 4 heads of 8 classes
+        )
+
+    def _create_task_layer(self):
+        return nn.Sequential(
+            nn.Linear(256, 8),
+            nn.Softmax(dim=0)       #This can probably be made neater
         )
 
 

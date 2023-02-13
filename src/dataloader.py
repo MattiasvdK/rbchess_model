@@ -119,24 +119,14 @@ class ChessDataset(Dataset):
 
         data = torch.tensor(list(map(int, open(sample + '/move', 'rb').read())))
         #y = torch.zeros(4, 8)
-        y = torch.zeros(32)
+        y = torch.zeros((4, 8))
         
         for idx, val in enumerate(data):
             try:
-                y[idx * 8 + val] = 1
+                y[idx][val] = 1
             except IndexError as err:
                 print(f'--- ERROR: {err}, at index: {idx} ---')
 
         return x, y
 
-    #def __process(board: list, tensor: torch.tensor)
-        """Maps a list of integers to a tensor.
-
-        This function is a helper for __getitem__ to process the list of
-        integers that is stored as data and map it to the tensor needed
-        for the network to process.
-        """
-        
-        #for idx, piece in enumerate(board):
-        #    x[idx // 8][idx % 8][piece] = 1
 

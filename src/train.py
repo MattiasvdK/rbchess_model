@@ -1,5 +1,7 @@
 import numpy as np
 import torch
+import time
+
 from torch.utils.tensorboard import SummaryWriter
 from torchmetrics.classification import BinaryAccuracy
 
@@ -14,11 +16,10 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 BATCH_SIZE = 64
 WEIGHT_DECAY = 0
 EPOCHS = 200
+EARLY_STOP = 7
 
 
-def train_model(loss_fn, metric_fn):
-    
-    print(f'Using: {DEVICE} as training processor')
+def train_model(loss_fn):
 
     model = TheModel()
     optimizer = torch.optim.Adam(
@@ -26,8 +27,8 @@ def train_model(loss_fn, metric_fn):
     )
 
     train_loader, test_loader = get_chess_loader(
-        path='/media/mattias/DataDisk/data/thesis/data/',
-        #path='../../test2',
+        #path='/media/mattias/DataDisk/data/thesis/data/',
+        path='../../test2',
         batch_size=BATCH_SIZE
     )
 
@@ -37,10 +38,19 @@ def train_model(loss_fn, metric_fn):
 
     # Metrics
 
+    loss_min = -1
+    unimproved = 0
+
     metrics = [CorrectDimension(), CorrectSquare(), CorrectMove()]
+
+    prev_loss = None
+    prev_pred = torch.empty(1)
+    prev_pred = prev_pred.to(DEVICE)
 
     for epoch in range(EPOCHS):
         
+        time_start = time.perf_counter()
+
         print(f'\nCurrent epoch: {epoch}')
 
         batch_losses = []
@@ -49,58 +59,72 @@ def train_model(loss_fn, metric_fn):
         test_losses = []
         test_acc = [[], [], []]
 
-        preds = []
+        pred = []
 
         # The training loop
         for x, y, in train_loader:
 
+
             x, y = x.to(DEVICE), y.to(DEVICE)
             predictions = model(x)
-            loss = loss_fn(predictions, y)
 
-            for idx, metric in enumerate(metrics):
+            for idx, metric in enumerate(metrics):  
                 accuracy = metric(predictions, y)
                 batch_acc[idx].append(accuracy.item())
+            
 
-
+            loss = loss_fn(predictions, y)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
             batch_losses.append(loss.item())
 
-            # batch_acc.append(accuracy.item())
-
-            preds = predictions
-
-
+        time_train = time.perf_counter()
+        
         # The test loop
         for x, y, in test_loader:
 
             x, y = x.to(DEVICE), y.to(DEVICE)
             predictions = model(x)
-            loss = loss_fn(predictions, y)
-
+            
+            # ---DEBUG---
+            pred.append(predictions)
+            # ---DEBUG---
+            
             for idx, metric in enumerate(metrics):
                 accuracy = metric(predictions, y)
                 test_acc[idx].append(accuracy.item())
 
-
+            loss = loss_fn(predictions, y)
+            
             test_losses.append(loss.item())
-            #test_acc.append(accuracy.item())
-
-            preds = predictions
 
         epoch_train_acc = np.mean(batch_acc, 1)  # Keep dimension over accuracy
         epoch_test_acc = np.mean(test_acc, 1)    # Keep dimension over accuracy
 
 
         epoch_train_loss = np.mean(batch_losses)
-        #epoch_train_acc = np.mean(batch_acc)
-
         epoch_test_loss = np.mean(test_losses)
-        #epoch_test_acc = np.mean(test_acc)
+        
+        # ---DEBUG---
+        print(f"Loss is previous: {epoch_test_loss == prev_loss}")
+        prev_loss = epoch_test_loss
 
+        pred = torch.cat(pred, dim=1)
+        print(f"Pred is previous: {torch.equal(prev_pred, pred)}")
+        prev_pred = pred
+        # ---DEBUG---
+
+        # Stop if there is no more improvement on the test loss
+        if epoch_test_loss < loss_min or loss_min < 0:
+            loss_min = epoch_test_loss
+        else:
+            if unimproved == EARLY_STOP:
+                print("--- EARLY STOP ---")
+                break
+            unimproved += 1
+        
         writer.add_scalars(
             "Loss",
             {"Training loss": epoch_train_loss,
@@ -114,7 +138,6 @@ def train_model(loss_fn, metric_fn):
              "Test accuracy": epoch_test_acc[0]},
             epoch
         )
-
         writer.add_scalars(
             "Square Accuracy",
             {"Training accuracy": epoch_train_acc[1],
@@ -129,7 +152,6 @@ def train_model(loss_fn, metric_fn):
             epoch
         )
         
-    
         print(f"training loss: {epoch_train_loss}, ",
               f"training accuracy: {epoch_train_acc[1]}, ",
               f"{epoch}"
@@ -137,6 +159,9 @@ def train_model(loss_fn, metric_fn):
         print(f"test loss: {epoch_test_loss}, ",
               f"test accuracy: {epoch_test_acc[1]}, ",
               f"{epoch}"
+        )
+        print(f"Epoch time: {time.perf_counter() - time_start}",
+              f"Of which training: {time_train - time_start}"
         )
 
     writer.close()
