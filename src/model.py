@@ -81,7 +81,7 @@ class TheModel(nn.Module):
     def _create_task_layer(self):
         return nn.Sequential(
             nn.Linear(256, 8),
-            nn.Softmax(dim=0)       #This can probably be made neater
+            nn.Softmax(dim=1)       #This can probably be made neater
         )
 
 

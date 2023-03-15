@@ -28,7 +28,8 @@ def train_model(loss_fn):
 
     train_loader, test_loader = get_chess_loader(
         #path='/media/mattias/DataDisk/data/thesis/data/',
-        path='../../test2',
+        path='../../games_10k',
+        #path='../../data/games',
         batch_size=BATCH_SIZE
     )
 
@@ -43,10 +44,6 @@ def train_model(loss_fn):
 
     metrics = [CorrectDimension(), CorrectSquare(), CorrectMove()]
 
-    prev_loss = None
-    prev_pred = torch.empty(1)
-    prev_pred = prev_pred.to(DEVICE)
-
     for epoch in range(EPOCHS):
         
         time_start = time.perf_counter()
@@ -59,10 +56,8 @@ def train_model(loss_fn):
         test_losses = []
         test_acc = [[], [], []]
 
-        pred = []
-
         # The training loop
-        for x, y, in train_loader:
+        for x, y in train_loader:
 
 
             x, y = x.to(DEVICE), y.to(DEVICE)
@@ -83,15 +78,12 @@ def train_model(loss_fn):
         time_train = time.perf_counter()
         
         # The test loop
-        for x, y, in test_loader:
+        for x, y in test_loader:
 
             x, y = x.to(DEVICE), y.to(DEVICE)
             predictions = model(x)
             
-            # ---DEBUG---
-            pred.append(predictions)
-            # ---DEBUG---
-            
+
             for idx, metric in enumerate(metrics):
                 accuracy = metric(predictions, y)
                 test_acc[idx].append(accuracy.item())
@@ -107,14 +99,6 @@ def train_model(loss_fn):
         epoch_train_loss = np.mean(batch_losses)
         epoch_test_loss = np.mean(test_losses)
         
-        # ---DEBUG---
-        print(f"Loss is previous: {epoch_test_loss == prev_loss}")
-        prev_loss = epoch_test_loss
-
-        pred = torch.cat(pred, dim=1)
-        print(f"Pred is previous: {torch.equal(prev_pred, pred)}")
-        prev_pred = pred
-        # ---DEBUG---
 
         # Stop if there is no more improvement on the test loss
         if epoch_test_loss < loss_min or loss_min < 0:
