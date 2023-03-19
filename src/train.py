@@ -19,8 +19,8 @@ EPOCHS = 200
 EARLY_STOP = 7
 
 
-def train_model(loss_fn):
-
+def train_model(loss_fn, name):
+    
     model = TheModel()
     optimizer = torch.optim.Adam(
         model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY
@@ -43,6 +43,8 @@ def train_model(loss_fn):
     unimproved = 0
 
     metrics = [CorrectDimension(), CorrectSquare(), CorrectMove()]
+    
+    print(f'Training \'{name}\' with \'{DEVICE}\'', end='\n\n')
 
     for epoch in range(EPOCHS):
         
@@ -103,6 +105,7 @@ def train_model(loss_fn):
         # Stop if there is no more improvement on the test loss
         if epoch_test_loss < loss_min or loss_min < 0:
             loss_min = epoch_test_loss
+            unimproved = 0
         else:
             if unimproved == EARLY_STOP:
                 print("--- EARLY STOP ---")
