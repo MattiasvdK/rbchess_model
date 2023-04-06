@@ -1,14 +1,15 @@
+
 import time
 import numpy as np
 
-from torch.utils.tensorboard import SummaryWriter
 from torchmetrics.classification import BinaryAccuracy
 
 from model import TheModel
+from modular_model import ModularModel
 from dataloader import get_chess_loader
 
 from accuracy import *
-
+import load_model as load
 
 LEARNING_RATE = 1e-4
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -18,13 +19,17 @@ EPOCHS = 200
 EARLY_STOP = 7
 PATH_MODEL = '../../results/models/'
 PATH_CSV = '../../results/csv/'
+PATH_BACKUP = '../../results/backup/'
 
 CSV_HEADER = 'epoch,train_loss,test_loss,train_class,test_class, \
               train_square,test_square,train_move,test_move\n'
 
-def train_model(loss_fn, name):
-    
-    model = TheModel()
+def train_modular(loss_fn, directory, name):
+    # TODO: Implement a better way to include loaded models
+     
+    model, loaded = load.load_model(directory, name)
+
+
     optimizer = torch.optim.Adam(
         model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY
     )
@@ -38,21 +43,24 @@ def train_model(loss_fn, name):
 
     model = model.to(DEVICE)
 
-    #writer = SummaryWriter()
+    if not loaded:
+        with open(directory + '/' + name + '.csv', 'w') as results:
+            results.write(CSV_HEADER)
 
-    with open(PATH_CSV + name + '.csv', 'w') as results:
-        results.write(CSV_HEADER)
+    
+    if loaded:
+        epochs, loss_min = load.load_state(directory)
+    else:
+        epochs, loss_min = (0, -1)
 
-    # Metrics
-
-    loss_min = -1
     unimproved = 0
 
+    # Metrics
     metrics = [CorrectDimension(), CorrectSquare(), CorrectMove()]
     
     print(f'Training \'{name}\' with \'{DEVICE}\'', end='\n\n')
 
-    for epoch in range(EPOCHS):
+    for epoch in range(epochs, EPOCHS):
         
         time_start = time.perf_counter()
 
@@ -116,51 +124,29 @@ def train_model(loss_fn, name):
             loss_min = epoch_test_loss
             unimproved = 0
             # Save model
-            torch.save(model, PATH_MODEL + name + '.pth')
+            torch.save(model.state_dict(), directory + '/' + name + '.pth')
+            
+            # Backup model, if interupted during first save this one shoud
+            # remain intact
+            torch.save(model.state_dict(), PATH_BACKUP + name + '.pth')
         else:
             if unimproved == EARLY_STOP:
                 print("--- EARLY STOP ---")
                 break
             unimproved += 1
-        
     
         
-        with open(PATH_CSV + name + '.csv', 'a') as results:
-            results.write(f'{epoch}, \
+        with open(directory + '/' + name + '.csv', 'a') as results:
+            results.write(f'{epoch + 1}, \
                 {epoch_train_loss},{epoch_test_loss}, \
                 {epoch_train_acc[0]},{epoch_test_acc[0]}, \
                 {epoch_train_acc[1]},{epoch_test_acc[1]}, \
                 {epoch_train_acc[2]},{epoch_test_acc[2]}\n'
             )
 
-        '''
-        writer.add_scalars(
-            "Loss",
-            {"Training loss": epoch_train_loss,
-             "Test loss": epoch_test_loss},
-            epoch
-        )
-
-        writer.add_scalars(
-            "Class Accuracy",
-            {"Training accuracy": epoch_train_acc[0],
-             "Test accuracy": epoch_test_acc[0]},
-            epoch
-        )
-        writer.add_scalars(
-            "Square Accuracy",
-            {"Training accuracy": epoch_train_acc[1],
-             "Test accuracy": epoch_test_acc[1]},
-            epoch
-        )
-
-        writer.add_scalars(
-            "Move Accuracy",
-            {"Training accuracy": epoch_train_acc[2],
-             "Test accuracy": epoch_test_acc[2]},
-            epoch
-        )
-        '''
+        with open(directory + '/log.txt', 'w') as log:
+            log.write(f'{epoch}\n{loss_min}')
+            
 
         print(f"training loss: {epoch_train_loss}, ",
               f"training accuracy: {epoch_train_acc[1]}, ",
@@ -174,9 +160,6 @@ def train_model(loss_fn, name):
               f"Of which training: {time_train - time_start}"
         )
     
-    #writer.close()
-
-
 
 
 
