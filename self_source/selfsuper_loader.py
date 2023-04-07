@@ -144,17 +144,17 @@ class SelfChessDataset(Dataset):
 
         permuted = torch.zeros_like(board)
 
-        target = []
+        target = torch.zeros((4, 4))
 
         for idx, perm in enumerate(permutation):
             perm_x = jigsaw[idx][0] * 4
             perm_y = jigsaw[idx][1] * 4
             board_x = jigsaw[perm][0] * 4
             board_y = jigsaw[perm][1] * 4
-            target.append(jigsaw[perm])
+
+            target[idx][perm] = 1
+
             permuted[:, perm_x:perm_x + 4, perm_y:perm_y + 4] = \
                 board[:, board_x:board_x + 4, board_y:board_y + 4]
-
-
         
-        return permuted, torch.Tensor(target)
+        return permuted, target
