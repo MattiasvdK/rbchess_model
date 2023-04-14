@@ -11,7 +11,7 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 BATCH_SIZE = 64
 WEIGHT_DECAY = 0
 EPOCHS = 200
-EARLY_STOP = 7
+EARLY_STOP = 10 # was 7
 
 CSV_HEADER = 'epoch,train_loss,test_loss,train_acc,test_acc\n'
 
@@ -30,6 +30,8 @@ def train_self_supervised(*, model, loss_fn, acc_fn, directory, name, epochs=0):
     Returns:
         None
     """
+
+    
 
     csv_path = directory + '/' + name + '.csv'
     model_path = directory + '/' + name + '.pth'
@@ -53,6 +55,9 @@ def train_self_supervised(*, model, loss_fn, acc_fn, directory, name, epochs=0):
         with open(csv_path, 'w') as results:
             results.write(CSV_HEADER)
 
+    loss_min = -1
+
+    print(f'Training \'{name}\' with \'{DEVICE}\'', end='\n\n')
 
     for epoch in range(epochs, EPOCHS):
         
@@ -63,9 +68,10 @@ def train_self_supervised(*, model, loss_fn, acc_fn, directory, name, epochs=0):
         acc_test = []
 
         start_time = time.perf_counter()
-
+        
+        model.train()
         for x, y in train_loader:
-            model.train()
+
 
             x, y = x.to(DEVICE), y.to(DEVICE)
             predictions = model(x)
@@ -82,17 +88,20 @@ def train_self_supervised(*, model, loss_fn, acc_fn, directory, name, epochs=0):
 
         train_time = time.perf_counter() - start_time
 
-        for x, y in test_loader:
+        # Testing
+        with torch.no_grad():
             model.eval()
+            for x, y in test_loader:
+                
 
-            x, y = x.to(DEVICE), y.to(DEVICE)
-            predictions = model(x)
+                x, y = x.to(DEVICE), y.to(DEVICE)
+                predictions = model(x)
 
-            accuracy = acc_fn(predictions, y)
-            loss = loss_fn(predictions, y)
+                accuracy = acc_fn(predictions, y)
+                loss = loss_fn(predictions, y)
 
-            loss_test.append(loss.item())
-            acc_test.append(accuracy.item())
+                loss_test.append(loss.item())
+                acc_test.append(accuracy.item())
 
         epoch_train_acc = np.mean(acc_train)
         epoch_test_acc = np.mean(acc_test)
@@ -124,7 +133,7 @@ def train_self_supervised(*, model, loss_fn, acc_fn, directory, name, epochs=0):
                 f'Train acc: {epoch_train_acc:.4f}\n',
                 f'Test loss : {epoch_test_loss:.4f}',
                 f'Test acc : {epoch_test_acc:.4f}',
-                f'Epoch time: {time.time() - start_time:.4f}',
+                f'Epoch time: {time.perf_counter() - start_time:.4f}',
                 f'of which training: {train_time:.4f}',
         )
 

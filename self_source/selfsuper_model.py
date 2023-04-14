@@ -6,7 +6,7 @@ class CNNBlock(nn.Module):
     def __init__(self, in_channels, out_channels, **kwargs):
         super(CNNBlock, self).__init__()
         self.conv = nn.Conv2d(in_channels, out_channels, **kwargs)
-        self.leakyre = nn.LeakyReLU(0.1)
+        self.leakyrelu = nn.LeakyReLU(0.1)
 
     def forward(self, x):
         return self.leakyrelu(self.conv(x))
@@ -58,7 +58,7 @@ class SelfModularModel(nn.Module):
             dim=1
         )
     
-    def switch_task(self, task):
+    def switch_task(self):
         self.fcl = nn.Linear(self.features_darknet, self.features)
 
         self.tasks_one = self._task_move()
@@ -108,6 +108,9 @@ class SelfModularModel(nn.Module):
         in_features = self.features
         self.features = layer['out_features']
         return nn.Linear(in_features, self.features)
+    
+    def _flatten(self, layer: dict):
+        return nn.Flatten()
     
     def _create_leakyrelu(self, layer: dict):
         return nn.LeakyReLU(layer['leak'])
